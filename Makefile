@@ -43,15 +43,17 @@ else
         # resolves it via the @executable_path/../lib rpath, not a build path.
         INSTALL_NAME = -Wl,-install_name,@rpath/$(notdir $@)
         RPATH     := -Wl,-rpath,@executable_path/../lib
+        LIB_RPATH := -Wl,-rpath,@loader_path
 		CFLAGS    += -DGL_SILENCE_DEPRECATION -I$(HOMEBREW_PREFIX)/include -arch $(ARCH)
 		LDFLAGS   := -L$(LIB_DIR) -L$(HOMEBREW_PREFIX)/lib -arch $(ARCH)
 		LIBS      := -lSDL2 -framework AppKit -framework OpenGL
     else
         # Linux
         LIB_EXT   := .so
-        LIB_FLAGS := -shared -fPIC
+        LIB_FLAGS := -shared -fPIC -Wl,-Bsymbolic-functions
         INSTALL_NAME =
         RPATH     := -Wl,-rpath,'$$ORIGIN/../lib'
+        LIB_RPATH := -Wl,-rpath,'$$ORIGIN'
         CFLAGS    += -fPIC
         LDFLAGS   := -L$(LIB_DIR) -Wl,-z,defs
 		LIBS      := -lSDL2 -lEGL -lGL -lm
@@ -94,13 +96,13 @@ define unity_lib_schema
 $(1): $(2) | $$(LIB_DIR)
 	@echo "[$(3)]"
 	@$$(call UNITY,$(4),$(5)) | \
-		$$(CC) $(6) $$(LIB_FLAGS) $$(INSTALL_NAME) -x c -o $$@ - $(7) $$(LDFLAGS) $(8)
+		$$(CC) $(6) $$(LIB_FLAGS) $$(INSTALL_NAME) -x c -o $$@ - $(7) $$(LIB_RPATH) $$(LDFLAGS) $(8)
 endef
 
 define src_lib_schema
 $(1): $(2) | $$(LIB_DIR)
 	@echo "[$(3)]"
-	@$$(CC) $(4) $$(LIB_FLAGS) $$(INSTALL_NAME) -x c -o $$@ $(5) $$(LDFLAGS) $(6)
+	@$$(CC) $(4) $$(LIB_FLAGS) $$(INSTALL_NAME) -x c -o $$@ $(5) $$(LIB_RPATH) $$(LDFLAGS) $(6)
 endef
 
 define app_schema
